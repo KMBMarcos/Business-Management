@@ -34,6 +34,7 @@ DevFast Manager/
 │   ├── es/           # Español
 │   └── en/           # English
 └── README.md
+```
 
 ## Documentación
 
