@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  email         String        @unique
+  password      String
+  name          String
+  avatar        String?
+  color         String?
+  bio           String?
+  githubUrl     String?
+  facebookUrl   String?
+  linkedinUrl   String?
+  websiteUrl    String?
+  roleId        Int
+  role          Role          @relation(fields: [roleId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  projectMembers ProjectMember[]
+  tasks          Task[]
+  createdTasks   Task[]          @relation("TaskCreator")
+  createdBugs    Bug[]           @relation("BugCreator")
+  activityLogs   ActivityLog[]
+  chatMessages   ChatMessage[]
+  chatMemberships ChatParticipant[]
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  permissions String   @default("[]")
+  users       User[]
+}
+
+model Project {
+  id               Int               @id @default(autoincrement())
+  name             String
+  description      String?
+  status           String            @default("ACTIVE")
+  publicUrl        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  members          ProjectMember[]
+  vpsLinks         ProjectVpsLink[]
+  infraLinks       ProjectInfraLink[]
+  transactions     FinancialTransaction[]
+  tasks            Task[]
+  bugs             Bug[]
+  metrics          ProjectMetric[]
+}
+
+model ProjectMember {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")
+  isResponsible Boolean  @default(false)
+
+  @@unique([projectId, userId])
+}
+
+model Provider {
+  id          Int      @id @default(autoincrement())
+  name        String
+  website     String?
+  type        String
+  createdAt   DateTime @default(now())
+
+  vpsServers  VpsServer[]
+  infraItems InfrastructureItem[]
+}
+
+model VpsServer {
+  id          Int       @id @default(autoincrement())
+  name        String
+  ip          String?
+  providerId  Int
+  provider    Provider  @relation(fields: [providerId], references: [id])
+  cost        Float
+  currency    String    @default("USD")
+  billingCycle String   @default("monthly")
+  renewalDate DateTime?
+  specs       String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  projectLinks ProjectVpsLink[]
+}
+
+model ProjectVpsLink {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  serverId  Int
+  server    VpsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  costShare Float    @default(100)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, serverId])
+}
+
+model InfrastructureItem {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String
+  cost         Float
+  currency     String   @default("USD")
+  billingCycle String   @default("monthly")
+  renewalDate  DateTime?
+  providerId   Int?
+  provider     Provider? @relation(fields: [providerId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projectLinks ProjectInfraLink[]
+}
+
+model ProjectInfraLink {
+  id        Int              @id @default(autoincrement())
+  projectId Int
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId    Int
+  item      InfrastructureItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  costShare Float         @default(100)
+  createdAt DateTime        @default(now())
+
+  @@unique([projectId, itemId])
+}
+
+model Currency {
+  id        Int            @id @default(autoincrement())
+  code      String         @unique
+  name      String
+  symbol    String
+  exchangeRates ExchangeRate[]
+}
+
+model ExchangeRate {
+  id          Int      @id @default(autoincrement())
+  currencyId  Int
+  currency    Currency @relation(fields: [currencyId], references: [id])
+  rate        Float
+  source      String   @default("manual")
+  date        DateTime @default(now())
+
+  @@unique([currencyId, date])
+}
+
+model FinancialTransaction {
+  id          Int           @id @default(autoincrement())
+  projectId   Int?
+  project     Project?      @relation(fields: [projectId], references: [id])
+  type        String
+  amount      Float
+  currency    String        @default("USD")
+  amountCup   Float?
+  exchangeRateUsed Float?
+  description String?
+  date        DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  projectId   Int
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String     @default("PENDING")
+  priority    String     @default("medium")
+  assigneeId  Int?
+  assignee    User?      @relation(fields: [assigneeId], references: [id])
+  creatorId   Int
+  creator     User       @relation("TaskCreator", fields: [creatorId], references: [id])
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Bug {
+  id          Int       @id @default(autoincrement())
+  projectId   Int
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  severity    String    @default("medium")
+  status      String    @default("OPEN")
+  reporterId  Int
+  reporter    User      @relation("BugCreator", fields: [reporterId], references: [id])
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProjectMetric {
+  id            Int      @id @default(autoincrement())
+  projectId     Int
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  totalUsers    Int      @default(0)
+  activeUsers   Int      @default(0)
+  paidUsers     Int      @default(0)
+  referralUsers Int      @default(0)
+  freeUsers     Int      @default(0)
+  collaborationUsers Int @default(0)
+  date          DateTime @default(now())
+
+  @@unique([projectId, date])
+}
+
+model Settings {
+  id        Int     @id @default(autoincrement())
+  key       String  @unique
+  value     String
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String?
+  entityId   Int?
+  message    String
+  metadata   String?
+  createdAt  DateTime @default(now())
+}
+
+model ChatChannel {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String   @default("GROUP")
+  createdById  Int?
+  createdAt    DateTime @default(now())
+
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+}
+
+model ChatParticipant {
+  id        Int         @id @default(autoincrement())
+  channelId Int
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([channelId, userId])
+}
+
+model ChatMessage {
+  id        Int         @id @default(autoincrement())
+  channelId Int
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  senderId  Int
+  sender    User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime    @default(now())
+}
+
+model EmailOtp {
+  id        Int      @id @default(autoincrement())
+  email     String
+  code      String
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
