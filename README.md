@@ -56,23 +56,48 @@ DevFast Manager/
 
 ## Instalación
 
-### Backend
+### Producción rápida con Docker Compose
+
+```bash
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+# Edita backend/.env: JWT_SECRET y SMTP_* son obligatorios en producción
+docker compose up -d --build
+```
+
+Acceso por defecto:
+
+```text
+http://localhost:8080
+http://<hostname-tailscale>:8080
+```
+
+Ver detalles en [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+### Desarrollo
+
+Backend:
 
 ```bash
 cd backend
+cp .env.example .env
 npm install
 npx prisma generate
-npx prisma db push  # Crea la base de datos SQLite
-npm run dev         # Inicia el servidor en puerto 3001
+npx prisma db push
+npm run dev         # puerto 3001 por defecto
 ```
 
-### Frontend
+Frontend:
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
-npm run dev         # Inicia en puerto 5173
+npm run dev         # puerto 5173
 ```
+
+El frontend usa API relativa por defecto en producción. Para desarrollo con servidores separados puedes definir `VITE_API_URL=http://localhost:3001`.
 
 ## Características
 

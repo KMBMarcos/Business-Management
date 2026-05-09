@@ -24,8 +24,13 @@ await fastify.register(cors, {
   credentials: true,
 });
 
+const jwtSecret = process.env.JWT_SECRET;
+if (process.env.NODE_ENV === 'production' && (!jwtSecret || jwtSecret === "devfast-secret-key-change-in-production")) {
+  throw new Error("JWT_SECRET must be set to a secure value in production");
+}
+
 await fastify.register(jwt, {
-  secret: process.env.JWT_SECRET || "devfast-secret-key-change-in-production",
+  secret: jwtSecret || "devfast-secret-key-change-in-production",
 });
 
 await fastify.register(websocket);

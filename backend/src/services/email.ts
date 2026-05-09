@@ -132,6 +132,10 @@ async function smtpSend(config: SmtpConfig, mail: MailOptions) {
 export async function sendMail(mail: MailOptions) {
   const config = getSmtpConfig();
   if (!config) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SMTP is required in production. Configure SMTP_HOST, SMTP_USER, SMTP_PASS and SMTP_FROM.');
+    }
+
     console.log(`[email:dev] To: ${mail.to}\nSubject: ${mail.subject}\n${mail.text}`);
     return { sent: false, dev: true };
   }
