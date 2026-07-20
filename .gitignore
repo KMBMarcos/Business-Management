@@ -15,9 +15,20 @@ backend/dist/
 # Runtime data
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 data/
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Vite
+.vite/
 
 # Logs
 *.log
